@@ -10,21 +10,25 @@ import matplotlib.pyplot as plt
 def qr_gen(n,A):
     R,Q = np.zeros(shape=(n,n)), np.zeros(shape=(n,n))
     for j in range(0,n):
+        w = A[:,j]
         for i in range(j):
             R[i,j]=np.vdot(A[:,j],Q[:,i])
-        w = A[:,j]
-        for k in range(j):
-            w=w-R[k,j]*Q[:,k]
+            w=w-R[i,j]*Q[:,i]
         R[j,j] = np.linalg.norm(w)
         Q[:,j] = (1/R[j,j])*w
     return R,Q
 
 #Exercice 2
+#def resolGS(A, b):
+#    R,Q = qr_gen(np.shape(A)[0], A)
+#    Qt=transpose_np(Q)
+#    Rinv=np.linalg.inv(R)
+#    return np.dot(Rinv,np.dot(Qt,b))
+    
 def resolGS(A, b):
     R,Q = qr_gen(np.shape(A)[0], A)
     Qt=transpose_np(Q)
-    Rinv=np.linalg.inv(R)
-    return np.dot(Rinv,np.dot(Qt,b))
+    return resoltrigsup(R,np.dot(Qt,b))
 
 def resolDC(A,b):
     L=DecompositionCholesky(A)
@@ -38,6 +42,15 @@ def transpose_np(A):
         B[:,i]=A[i,:]
     return B
 
+def resoltrigsup(A, b):
+    x=np.zeros(np.shape(b))
+    for i in range(n-1, -1, 0):
+        somme=0
+        for k in range(i+1, n):
+            somme += x[k]
+        x[i] = (b[i]-somme)/A[i, i]
+    return x
+    
 #Exercice 3
 def compare(n):
     taille = [k for k in range(2, n+1)]
