@@ -24,13 +24,13 @@ def qr_gen(n,A):
 #    Qt=transpose_np(Q)
 #    Rinv=np.linalg.inv(R)
 #    return np.dot(Rinv,np.dot(Qt,b))
-    
+
 def resolGS(A, b):
     R,Q = qr_gen(np.shape(A)[0], A)
     Qt=transpose_np(Q)
     return resoltrigsup(R,np.dot(Qt,b))
 
-def resolDC(A,b):
+def resolDC(A,b): #ajouter resol trigsup
     L=DecompositionCholesky(A)
     Lt=transpose_np(L)
     Lt_inv, L_inv=np.linalg.inv(Lt), np.linalg.inv(L)
@@ -43,6 +43,7 @@ def transpose_np(A):
     return B
 
 def resoltrigsup(A, b):
+    n = np.shape(b)
     x=np.zeros(np.shape(b))
     for i in range(n-1, -1, 0):
         somme=0
@@ -50,7 +51,7 @@ def resoltrigsup(A, b):
             somme += x[k]
         x[i] = (b[i]-somme)/A[i, i]
     return x
-    
+
 #Exercice 3
 def compare(n):
     taille = [k for k in range(2, n+1)]
@@ -86,3 +87,32 @@ def DecompositionCholesky(A):
                     somme += L[k,j]*L[i,j]
                 L[i,k]=(A[i,k]-somme)/L[k,k]
     return L
+
+def ReductionGauss(A):
+    n = np.shape(A)[0]
+    List_gik = []
+    for k in range(0, n-1):
+        a = list(map(lambda x: x[k] != 0, A))
+        if True in a:
+            while A[k,k] == 0:
+                    L = list(A[k])
+                    for i in range(k, n-1):
+                        A[i] = A[i+1]
+                    A[-1] = L
+                    break_while = True
+                    for i in range(k, n):
+                        if A[i,k] != 0:
+                            break_while = False
+                    if break_while:
+                        break
+            for i in range(k+1, n):
+                gik = A[i,k] / A[k,k]
+                List_gik.append(gik)
+                A[i] = A[i, :] - gik * A[k, :]
+    return A, List_gik
+
+def Gauss(A, b):
+    M = concatenate(A, b)
+    T_aug = ReductionGauss(M)[0]
+    print(T_aug)
+    return resoltrigsup(T_aug,b)
