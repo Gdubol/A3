@@ -43,13 +43,13 @@ def transpose_np(A):
     return B
 
 def resoltrigsup(A, b):
-    n = np.shape(b)
+    n = np.shape(b)[0]
     x=np.zeros(np.shape(b))
-    for i in range(n-1, -1, 0):
+    for i in range(n-1, -1, -1):
         somme=0
         for k in range(i+1, n):
-            somme += x[k]
-        x[i] = (b[i]-somme)/A[i, i]
+            somme += x[k,0]*A[i,k]
+        x[i,0] = (b[i,0]-somme)/A[i, i]
     return x
 
 #Exercice 3
@@ -108,11 +108,9 @@ def ReductionGauss(A):
             for i in range(k+1, n):
                 gik = A[i,k] / A[k,k]
                 List_gik.append(gik)
-                A[i] = A[i, :] - gik * A[k, :]
+                A[i] = A[i,:] - gik * A[k,:]
     return A, List_gik
 
 def Gauss(A, b):
-    M = concatenate(A, b)
-    T_aug = ReductionGauss(M)[0]
-    print(T_aug)
-    return resoltrigsup(T_aug,b)
+    T_aug = ReductionGauss(A)[0]
+    return resoltrigsup(np.array(T_aug),b)
