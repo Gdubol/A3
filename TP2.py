@@ -57,18 +57,23 @@ def compare(n):
     taille = [k for k in range(2, n+1)]
     TGS=[]
     TDC=[]
+    TG=[]
     for e in taille:
-        A=np.random.randint(1,100, size=(e,e))
-        b=np.random.randint(1,100, size=(e,1))
+        A=np.random.rand(e,e)
+        b=np.random.rand(e,1)
         t1=time.time()
         resolGS(A, b)
         t2=time.time()
         resolDC(A, b)
         t3=time.time()
+        Gauss(A,b)
+        t4=time.time()
         TGS.append(t2-t1)
         TDC.append(t3-t2)
-    plt.plot(taille,TGS,color='b')
-    plt.plot(taille,TDC,color='r')
+        TG.append(t4-t3)
+    plt.plot(taille,TGS,color='b') #bleu
+    plt.plot(taille,TDC,color='r') #rouge
+    plt.plot(taille,TG,color='g') #vert
     plt.show()
 
 def DecompositionCholesky(A):
@@ -88,23 +93,29 @@ def DecompositionCholesky(A):
                 L[i,k]=(A[i,k]-somme)/L[k,k]
     return L
 
-def Gaussel(A):
+def Gaussel(A): #A doit contenir des flottants
     n = np.shape(A)[0]
+    A_inv = np.eye(n,n)
     r=-1
     for j in range(n):
-        k = (max([i for i in enumerate(list(A[:,j]))][r+1:], key=lambda e: e[1]))[0]
+        k = (max([i for i in enumerate(list(A[:,j]))][r+1:n+1], key=lambda e: e[1]))[0]
         if A[k,j] != 0:
             r+=1
-            A[k,:]=A[k,:]/2 #A doit contenir des flotants
+            A_inv[k,:]=A_inv[k,:]/A[k,j]
+            A[k,:]=A[k,:]/A[k,j]
             if k!=r:
+                b1=A_inv[k,:].copy()
+                A_inv[k,:]=A_inv[r,:]
+                A_inv[r,:]=b1
+
                 b=A[k,:].copy()
                 A[k,:]=A[r,:]
                 A[r,:]=b
             for i in range(n):
                 if i!=r:
+                    A_inv[i,:]=A_inv[i,:]-(A_inv[r,:]*A[i,j])
                     A[i,:]=A[i,:]-(A[r,:]*A[i,j])
-    return A
+    return A_inv
 
 def Gauss(A, b):
-    T_aug = ReductionGauss(A)[0]
-    return resoltrigsup(np.array(T_aug),b)
+    return np.dot(Gaussel(A),b)
