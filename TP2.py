@@ -88,28 +88,22 @@ def DecompositionCholesky(A):
                 L[i,k]=(A[i,k]-somme)/L[k,k]
     return L
 
-def ReductionGauss(A):
+def Gaussel(A):
     n = np.shape(A)[0]
-    List_gik = []
-    for k in range(0, n-1):
-        a = list(map(lambda x: x[k] != 0, A))
-        if True in a:
-            while A[k,k] == 0:
-                    L = list(A[k])
-                    for i in range(k, n-1):
-                        A[i] = A[i+1]
-                    A[-1] = L
-                    break_while = True
-                    for i in range(k, n):
-                        if A[i,k] != 0:
-                            break_while = False
-                    if break_while:
-                        break
-            for i in range(k+1, n):
-                gik = A[i,k] / A[k,k]
-                List_gik.append(gik)
-                A[i] = A[i,:] - gik * A[k,:]
-    return A, List_gik
+    r=-1
+    for j in range(n):
+        k = (max([i for i in enumerate(list(A[:,j]))][r+1:], key=lambda e: e[1]))[0]
+        if A[k,j] != 0:
+            r+=1
+            A[k,:]=A[k,:]/2 #A doit contenir des flotants
+            if k!=r:
+                b=A[k,:].copy()
+                A[k,:]=A[r,:]
+                A[r,:]=b
+            for i in range(n):
+                if i!=r:
+                    A[i,:]=A[i,:]-(A[r,:]*A[i,j])
+    return A
 
 def Gauss(A, b):
     T_aug = ReductionGauss(A)[0]
