@@ -5,6 +5,8 @@
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+import math
+import random
 
 #Exercice 1
 def qr_gen(n,A):
@@ -32,9 +34,15 @@ def resolGS(A, b):
 
 def resolDC(A,b): #ajouter resol trigsup
     L=DecompositionCholesky(A)
-    Lt=transpose_np(L)
-    Lt_inv, L_inv=np.linalg.inv(Lt), np.linalg.inv(L)
-    return np.dot(Lt_inv,np.dot(L_inv,b))
+    try:
+        Lt=transpose_np(L)
+        Lt_inv=np.linalg.inv(Lt)
+        L_inv=np.linalg.inv(L)
+        X=np.dot(L_inv,b)
+        return np.dot(Lt_inv,X)
+    except:
+        print('echec')
+        return np.linalg.solve(A,b)
 
 def transpose_np(A):
     B = np.zeros(shape=np.shape(A))
@@ -58,23 +66,66 @@ def compare(n):
     TGS=[]
     TDC=[]
     TG=[]
+    eTGS=[]
+    eTDC=[]
+    eTG=[]
+    L_cond=[]
+
     for e in taille:
-        A=np.random.rand(e,e)
+        while True:
+            l=np.random.rand(e,e)
+            At=transpose_np(l)
+            A=l+At
+            if np.linalg.det(A)!=0:
+                break
         b=np.random.rand(e,1)
+        A_save = np.copy(A)
+        b_save = np.copy(b)
         t1=time.time()
-        resolGS(A, b)
+        xGS=resolGS(A, b)
         t2=time.time()
-        resolDC(A, b)
+        xDC=resolDC(A, b)
         t3=time.time()
-        Gauss(A,b)
+        xG, A_inverse=Gauss(A,b)
         t4=time.time()
         TGS.append(t2-t1)
         TDC.append(t3-t2)
         TG.append(t4-t3)
-    plt.plot(taille,TGS,color='b') #bleu
-    plt.plot(taille,TDC,color='r') #rouge
-    plt.plot(taille,TG,color='g') #vert
+
+        eTGS.append(math.log10(np.linalg.norm(abs(np.dot(A_save,xGS)-b_save))))
+        eTDC.append(math.log10(np.linalg.norm(abs(np.dot(A_save,xDC)-b_save))))
+        eTG.append(math.log10(np.linalg.norm(abs(np.dot(A_save,xG)-b_save))))
+
+        L_cond.append(np.dot(np.linalg.norm(A_inverse),np.linalg.norm(A_save)))
+
+    plt.title("Temps d'éxécution en fonction de la taille de la matrice")
+    plt.xlabel("Taille de la matrice")
+    plt.ylabel("Temps d'execution")
+    plt.plot(taille,TGS,color='b',label='Gram-Schmidt') #bleu
+    plt.plot(taille,TDC,color='r',label='Décomposition de Cholesky') #rouge
+    plt.plot(taille,TG,color='g',label='Gauss') #vert
+    plt.legend()
     plt.show()
+
+    L=[eTGS,eTDC,eTG]
+    plt.clf()
+    plt.title("Erreur en fonction de la taille de la matrice")
+    plt.xlabel("Taille de la matrice")
+    plt.ylabel("Erreur")
+    plt.plot(taille,L[0],color='b',label='Gram-Schmidt')
+    #plt.plot(taille,L[1],color='r',label='Décomposition de Cholesky')
+    plt.plot(taille,L[2],color='g',label='Gauss')
+    plt.legend()
+    plt.show()
+    
+    plt.clf()
+    plt.title("Conditionnement en fonction de la taille de la matrice")
+    plt.xlabel("Taille de la matrice")
+    plt.ylabel("Conditionnement")
+    plt.plot(taille, L_cond,label='conditionnement (pour des matrices aléatoires symétriques)')
+    plt.legend()
+    plt.show()
+
 
 def DecompositionCholesky(A):
     n = np.shape(A)[0]
@@ -85,37 +136,56 @@ def DecompositionCholesky(A):
                 somme=0
                 for j in range(0,k):
                     somme += (L[k,j])**2
-                L[i,k]= (A[k,k]-somme)**(1/2)
+                L[i,k]= (abs(A[k,k]-somme))**(1/2) #racine négative
             else:
                 somme=0
                 for j in range(0,k):
                     somme += L[k,j]*L[i,j]
                 L[i,k]=(A[i,k]-somme)/L[k,k]
     return L
-
+"""
+def DecompositionCholesky(A):
+    n = np.shape(A)[0]
+    L = np.zeros(shape=(n,n))
+    for i in range(n):
+        for k in range(i+1):
+            tmp_sum = sum(L[i,j]*L[k,j] for j in range(k))
+            if i==k:
+                L[i,k] = math.sqrt(abs(A[i,i]-tmp_sum))
+            else:
+                L[i,k] = (1.0/L[k,k]*(A[i,k]-tmp_sum))
+    return L
+"""
 def Gaussel(A): #A doit contenir des flottants
+    Ag=A.copy()
     n = np.shape(A)[0]
     A_inv = np.eye(n,n)
     r=-1
     for j in range(n):
-        k = (max([i for i in enumerate(list(A[:,j]))][r+1:n+1], key=lambda e: e[1]))[0]
-        if A[k,j] != 0:
+        k = (max([(i[0], abs(i[1])) for i in enumerate(list(Ag[:,j]))][r+1:n+1], key=lambda e: e[1]))[0]
+        if Ag[k,j] != 0:
             r+=1
-            A_inv[k,:]=A_inv[k,:]/A[k,j]
-            A[k,:]=A[k,:]/A[k,j]
+            A_inv[k,:]=A_inv[k,:]/Ag[k,j]
+            Ag[k,:]=Ag[k,:]/Ag[k,j]
             if k!=r:
                 b1=A_inv[k,:].copy()
                 A_inv[k,:]=A_inv[r,:]
                 A_inv[r,:]=b1
 
-                b=A[k,:].copy()
-                A[k,:]=A[r,:]
-                A[r,:]=b
+                b=Ag[k,:].copy()
+                Ag[k,:]=Ag[r,:]
+                Ag[r,:]=b
             for i in range(n):
                 if i!=r:
-                    A_inv[i,:]=A_inv[i,:]-(A_inv[r,:]*A[i,j])
-                    A[i,:]=A[i,:]-(A[r,:]*A[i,j])
+                    A_inv[i,:]=A_inv[i,:]-(A_inv[r,:]*Ag[i,j])
+                    Ag[i,:]=Ag[i,:]-(Ag[r,:]*Ag[i,j])
     return A_inv
 
 def Gauss(A, b):
-    return np.dot(Gaussel(A),b)
+    A_inverse=np.copy(Gaussel(A))
+    return np.dot(A_inverse,b), A_inverse
+
+####################################################################################################################################################
+
+
+####################################################################################################################################################
